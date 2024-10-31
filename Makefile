@@ -223,6 +223,8 @@ else ifeq ($(FAMILY),ESP32)
 USE_ESP32=1
 else ifeq ($(FAMILY),ESP32_IDF4)
 USE_ESP32=1
+else ifeq ($(FAMILY),ESP32_IDF5)
+USE_ESP32=1
 else ifdef EMW3165
 USE_WICED=1
 else ifdef CC3000
@@ -864,6 +866,8 @@ else ifdef EMSCRIPTEN
 include make/targets/EMSCRIPTEN.make
 else ifdef ESP32_IDF4
 include make/targets/ESP32_IDF4.make
+else ifdef ESP32_IDF5
+include make/targets/ESP32_IDF5.make
 else ifdef ESP32
 include make/targets/ESP32.make
 else ifdef ESP8266
