@@ -211,27 +211,28 @@ endif
 
 # If we're not on Linux and we want internet, we need either CC3000 or WIZnet support
 ifdef USE_NET
-ifndef LINUX
-ifdef WIZNET
-USE_WIZNET=1
-ifdef W5100
-USE_WIZNET_W5100=1
-endif
-else ifeq ($(FAMILY),ESP8266)
-USE_ESP8266=1
-else ifeq ($(FAMILY),ESP32)
-USE_ESP32=1
-else ifeq ($(FAMILY),ESP32_IDF4)
-USE_ESP32=1
-else ifeq ($(FAMILY),ESP32_IDF5)
-USE_ESP32=1
-else ifdef EMW3165
-USE_WICED=1
-else ifdef CC3000
-USE_CC3000=1
-endif
-endif
-endif
+  ifndef LINUX
+    ifdef WIZNET
+      USE_WIZNET=1
+      ifdef W5100 # additional libs required if WIZNET and W5100
+        USE_WIZNET_W5100=1
+      endif 
+    else ifeq ($(FAMILY),ESP8266)
+      USE_ESP8266=1
+    else ifeq ($(FAMILY),ESP32)
+      USE_ESP32=1
+    else ifeq ($(FAMILY),ESP32_IDF4)
+      USE_ESP32=1
+    else ifeq ($(FAMILY),ESP32_IDF5) 
+      USE_ESP32_IDF5=1  #SGA todo - needs new use ESP32 Net symbol to manage all ESP32 targets network inclusion
+    else ifdef EMW3165
+      USE_WICED=1
+    else ifdef CC3000
+      USE_CC3000=1
+    endif 
+  endif # LINUX
+endif # USE_NET
+
 
 ifdef DEBUG
 #OPTIMIZEFLAGS=-Os -g
@@ -464,7 +465,7 @@ ifeq ($(USE_USB_HID),1)
   DEFINES += -DUSE_USB_HID
 endif
 
-ifeq ($(USE_NET),1)
+ifeq ($(USE_NET),1) # Network libs added depending on net adapter (or family capability)
  DEFINES += -DUSE_NET
  INCLUDE += -I$(ROOT)/libs/network -I$(ROOT)/libs/network -I$(ROOT)/libs/network/http
  WRAPPERSOURCES += \
@@ -475,12 +476,12 @@ ifeq ($(USE_NET),1)
  libs/network/socketserver.c \
  libs/network/socketerrors.c
 
-ifneq ($(USE_NETWORK_JS),0)
- DEFINES += -DUSE_NETWORK_JS
- WRAPPERSOURCES += libs/network/js/jswrap_jsnetwork.c
- INCLUDE += -I$(ROOT)/libs/network/js
- SOURCES += libs/network/js/network_js.c
-endif
+ ifneq ($(USE_NETWORK_JS),0)
+  DEFINES += -DUSE_NETWORK_JS
+  WRAPPERSOURCES += libs/network/js/jswrap_jsnetwork.c
+  INCLUDE += -I$(ROOT)/libs/network/js
+  SOURCES += libs/network/js/network_js.c
+ endif
 
  ifdef LINUX
  INCLUDE += -I$(ROOT)/libs/network/linux
