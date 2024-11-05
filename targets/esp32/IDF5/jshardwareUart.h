@@ -16,7 +16,7 @@
  */
 #include "jshardware.h"
 
-#define uart_console 0
+#define uart_Serial1 0
 #define uart_Serial2 1
 #define uart_Serial3 2
 

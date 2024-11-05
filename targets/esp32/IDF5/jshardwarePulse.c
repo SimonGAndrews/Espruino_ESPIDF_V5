@@ -3,6 +3,7 @@
  * a JavaScript interpreter for Microcontrollers designed by Gordon Williams
  *
  * Copyright (C) 2016 by Juergen Marsch
+ * Modified Nov 2024 for ESP-IDF Version 5.2 by SimonGAndrews
  *
  * This Source Code Form is subject to the terms of the Mozilla Publici
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +15,103 @@
  * Contains ESP32 board specific functions.
  * ----------------------------------------------------------------------------
  */
+
+#include "jsinteractive.h"
+#include "jshardwarePulse.h"
+#include "driver/rmt.h"
+#include "esp_log.h"
+
+#define TAG "jshardwarePulse"  // ESP-IDF log tag for debugging
+
+/**
+ * Initializes the RMT module.
+ *
+ * Relevant Example:
+ * - RMT TX/RX Example: https://github.com/espressif/esp-idf/tree/v5.2/examples/peripherals/rmt
+ */
+void RMTInit() {
+    jsiConsolePrintf("jshardwarePulse.h - RMTInit: Initializing RMT\n");
+    ESP_LOGI(TAG, "Initializing RMT");
+
+    // Configure and initialize the RMT driver
+    esp_err_t err = rmt_driver_install(RMT_CHANNEL_0, 0, 0);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to install RMT driver: %s", esp_err_to_name(err));
+        return;
+    }
+}
+
+/**
+ * Resets the RMT configuration.
+ */
+void RMTReset() {
+    jsiConsolePrintf("jshardwarePulse.h - RMTReset: Resetting RMT\n");
+    ESP_LOGI(TAG, "Resetting RMT");
+
+    // Reset RMT configuration and disable channels
+    rmt_driver_uninstall(RMT_CHANNEL_0);
+}
+
+void sendPulse(Pin pin, bool, int duration) {
+    jsiConsolePrintf("jshardwarePulse.h - sendPulse: Function called with pin=%d, duration=%d\n", pin, duration);
+    // Function implementation here
+}
+
+
+// CHAT GPT also came up with the following
+
+
+/**
+ * Configures the RMT channel for pulse output.
+ */
+void RMTInitChannel(Pin pin, bool polarity) {
+    jsiConsolePrintf("jshardwarePulse.h - RMTInitChannel: Initializing RMT channel on pin %d\n", pin);
+    ESP_LOGI(TAG, "Configuring RMT channel for pin %d with polarity %d", pin, polarity);
+
+    rmt_config_t rmt_cfg = {
+        .rmt_mode = RMT_MODE_TX,
+        .channel = RMT_CHANNEL_0,
+        .gpio_num = pin,
+        .clk_div = 80,  // Clock divider for RMT
+        .mem_block_num = 1,
+        .tx_config = {
+            .loop_en = false,
+            .carrier_en = polarity,
+            .idle_level = RMT_IDLE_LEVEL_LOW,
+            .idle_output_en = true,
+        }
+    };
+
+    esp_err_t err = rmt_config(&rmt_cfg);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to configure RMT: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI(TAG, "RMT channel configured for pin %d", pin);
+    }
+}
+
+/**
+ * Sets the pulse to low state.
+ */
+void setPulseLow() {
+    jsiConsolePrintf("jshardwarePulse.h - setPulseLow: Setting pulse to low\n");
+    ESP_LOGI(TAG, "Setting pulse to low");
+
+    // TODO: Implementation for setting pulse low
+}
+
+/**
+ * Sets the pulse to high state.
+ */
+void setPulseHigh() {
+    jsiConsolePrintf("jshardwarePulse.h - setPulseHigh: Setting pulse to high\n");
+    ESP_LOGI(TAG, "Setting pulse to high");
+
+    // TODO: Implementation for setting pulse high
+}
+
+
+#if original
 #include "jsutils.h"
 
 #include "jshardwarePulse.h"
@@ -106,3 +204,4 @@ void sendPulse(Pin pin, bool pulsePolarity, int duration){
   return;
 }
 
+#endif // original

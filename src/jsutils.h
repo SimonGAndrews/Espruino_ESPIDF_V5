@@ -634,7 +634,7 @@ void reverseBytes(char *data, int len);
 size_t jsuGetFreeStack();
 
 #ifdef ESP32
-  void *espruino_stackHighPtr;  //Used by jsuGetFreeStack
+ extern void *espruino_stackHighPtr;  //Used by jsuGetFreeStack
 #endif
 
 typedef struct {

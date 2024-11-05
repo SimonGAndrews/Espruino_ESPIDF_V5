@@ -37,7 +37,7 @@
 
 #include "jsvar.h"
 
-extern void *espruino_stackHighPtr;  //Name spaced because this has to be a global variable.
+uint32_t *espruino_stackHighPtr;  //Name spaced because this has to be a global variable.
                                      //Used in jsuGetFreeStack().
 #ifdef CONFIG_IDF_TARGET_ESP32C3
 #include "hal/usb_serial_jtag_ll.h"
@@ -72,7 +72,7 @@ static void espruinoTask(void *data) {
   int heapVars;
 
   espruino_stackHighPtr = &heapVars;  //Ignore the name, 'heapVars' is on the stack!
-                        //I didn't use another variable becaue this function never ends so
+                        //another variable was not used because this function never ends so
                         //all variables declared here consume stack space that is never freed.
 
   PWMInit();

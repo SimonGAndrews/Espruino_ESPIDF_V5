@@ -3,6 +3,7 @@
  * a JavaScript interpreter for Microcontrollers designed by Gordon Williams
  *
  * Copyright (C) 2016 by Rhys Williams (wilberforce)
+ * Modified Nov 2024 for ESP-IDF Version 5.2 by SimonGAndrews
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +16,122 @@
  * ----------------------------------------------------------------------------
  */
 
+#include "jsinteractive.h"
+#include "jshardwareSpi.h"
+#include "driver/spi_master.h"
+#include "esp_log.h"
+
+#define TAG "jshardwareSpi"  // ESP-IDF log tag for debugging
+
+/**
+ * Initializes the SPI channels.
+ *
+ * Relevant Example:
+ * - SPI Master Example: https://github.com/espressif/esp-idf/tree/v5.2/examples/peripherals/spi_master
+ */
+void SPIChannelsInit() {
+    jsiConsolePrintf("jshardwareSpi.h - SPIChannelsInit: Initializing SPI channels\n");
+    ESP_LOGI(TAG, "Initializing SPI channels");
+
+    // Initialize SPI configuration for each channel
+    // Placeholder for setup loop or additional channel initialization if needed
+}
+
+/**
+ * Resets the SPI configuration.
+ */
+void SPIReset() {
+    jsiConsolePrintf("jshardwareSpi.h - SPIReset: Resetting SPI configuration\n");
+    ESP_LOGI(TAG, "Resetting SPI configuration");
+
+    // Reset SPI configurations as necessary
+    // Example: Uninstall SPI driver if initialized
+}
+
+/**
+ * Sets up SPI with specified device and settings.
+ *
+ * Relevant Example:
+ * - SPI Master Example: https://github.com/espressif/esp-idf/tree/v5.2/examples/peripherals/spi_master
+ */
+void jshSPISetup(IOEventFlags device, JshSPIInfo *inf) {
+    jsiConsolePrintf("jshardwareSpi.h - jshSPISetup: Setting up SPI for device %d\n", device);
+    ESP_LOGI(TAG, "Setting up SPI for device %d", device);
+
+    spi_device_interface_config_t dev_cfg = {
+  //      .clock_speed_hz = inf->clock, 
+  //      .mode = inf->mode,
+  //      .spics_io_num = inf->csPin,
+  //      .queue_size = 1
+    };
+/*
+    esp_err_t err = spi_bus_add_device(SPI2_HOST, &dev_cfg, &SPIChannels[device].spi);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add SPI device: %s", esp_err_to_name(err));
+    }
+    */
+}
+
+/**
+ * Sends data over SPI.
+ */
+int jshSPISend(IOEventFlags device, int data) {
+    jsiConsolePrintf("jshardwareSpi.h - jshSPISend: Sending data on device %d\n", device);
+    ESP_LOGI(TAG, "Sending data on SPI device %d", device);
+/*
+    // Configure and send SPI data
+    spi_transaction_t trans = {
+        .length = 8,
+        .tx_buffer = &data
+    };
+
+    esp_err_t err = spi_device_transmit(SPIChannels[device].spi, &trans);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "SPI send failed: %s", esp_err_to_name(err));
+        return -1;
+    }
+    */
+    return 0;
+}
+
+/**
+ * Sends multiple bytes over SPI.
+ */
+bool jshSPISendMany(IOEventFlags device, unsigned char *tx, unsigned char *rx, size_t count, void (*callback)()) {
+    jsiConsolePrintf("jshardwareSpi.h - jshSPISendMany: Sending multiple bytes on device %d\n", device);
+    ESP_LOGI(TAG, "Sending multiple bytes on SPI device %d", device);
+
+    return true;
+}
+
+/**
+ * Waits for SPI transaction to complete.
+ */
+void jshSPIWait(IOEventFlags device) {
+    jsiConsolePrintf("jshardwareSpi.h - jshSPIWait: Waiting on device %d\n", device);
+    ESP_LOGI(TAG, "Waiting on SPI device %d", device);
+
+    // Placeholder for wait or synchronization function, if needed
+}
+
+
+void jshSPISend16(IOEventFlags device, int data) {
+    jsiConsolePrintf("jshardwareSpi.h - jshSPISend16: Function called with device=%d, data=%d\n", device, data);
+    // Function implementation here
+}
+
+void jshSPISet16(IOEventFlags device, bool is16) {
+    jsiConsolePrintf("jshardwareSpi.h - jshSPISet16: Function called with device=%d, is16=%d\n", device, is16);
+    // Function implementation here
+}
+
+void jshSPISetReceive(IOEventFlags device, bool isReceive) {
+    jsiConsolePrintf("jshardwareSpi.h - jshSPISetReceive: Function called with device=%d, isReceive=%d\n", device, isReceive);
+    // Function implementation here
+}
+
+
+#if original
 #include "jspininfo.h"
 #include "jshardware.h"
 #include "driver/gpio.h"
@@ -254,3 +371,4 @@ void jshSPISetReceive(IOEventFlags device, bool isReceive) {
   int channelPnt = getSPIChannelPnt(device);
   SPIChannels[channelPnt].spi_read = isReceive;
 }
+#endif //original

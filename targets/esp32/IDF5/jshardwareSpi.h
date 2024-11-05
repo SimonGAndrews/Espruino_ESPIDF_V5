@@ -15,19 +15,23 @@
  * ----------------------------------------------------------------------------
  */
 
+#ifndef jshardwarespi
+#define jshardwarespi
+
 #include "jspininfo.h"
 #include "jshardware.h"
-#include "driver/gpio.h"
-#include "driver/spi_master.h"
+// #include "driver/gpio.h"
+// #include "driver/spi_master.h"
 
 // Convert an Espruino pin to an ESP32 pin number.
-gpio_num_t pinToESP32Pin(Pin pin);
+// gpio_num_t pinToESP32Pin(Pin pin);
 
 #if CONFIG_IDF_TARGET_ESP32C3
 #define SPIMax 1
 #else
 #define SPIMax 2
 #endif
+/*
 struct SPIChannel{
   spi_device_handle_t spi;
   bool spi_read;
@@ -35,6 +39,7 @@ struct SPIChannel{
   spi_host_device_t HOST;
 };
 struct SPIChannel SPIChannels[SPIMax];
+*/
 void SPIChannelsInit();
 void SPIReset();
 
@@ -46,3 +51,5 @@ void jshSPISend16( IOEventFlags device, int data );
 void jshSPISet16( IOEventFlags device, bool is16 );
 void jshSPIWait( IOEventFlags device );
 void jshSPISetReceive(IOEventFlags device, bool isReceive);
+
+#endif // jshardwarespi

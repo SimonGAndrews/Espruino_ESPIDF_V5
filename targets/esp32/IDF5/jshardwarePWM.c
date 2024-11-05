@@ -3,6 +3,7 @@
  * a JavaScript interpreter for Microcontrollers designed by Gordon Williams
  *
  * Copyright (C) 2016 by Juergen Marsch
+ * Modified Nov 2024 for ESP-IDF Version 5.2 by SimonGAndrews
  *
  * This Source Code Form is subject to the terms of the Mozilla Publici
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +15,79 @@
  * Contains ESP32 board specific functions.
  * ----------------------------------------------------------------------------
  */
+
+#include "jsinteractive.h"
+#include "jshardwarePWM.h"
+#include "driver/ledc.h"
+#include "esp_log.h"
+
+#define TAG "jshardwarePWM"  // ESP-IDF log tag for debugging
+
+/**
+ * Initializes the PWM module.
+ *
+ * Relevant Example:
+ * - LEDC PWM Example: https://github.com/espressif/esp-idf/tree/v5.2/examples/peripherals/ledc
+ */
+void PWMInit() {
+    jsiConsolePrintf("jshardwarePWM.h - PWMInit: Initializing PWM\n");
+    ESP_LOGI(TAG, "Initializing PWM");
+
+    // Initialize PWM timers and channels as required
+    // Configure frequency, timer bit width, and other settings
+    esp_err_t err = ledc_fade_func_install(0);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize LEDC fade function: %s", esp_err_to_name(err));
+    }
+}
+
+/**
+ * Writes a PWM signal to the specified pin with a given value and frequency.
+ *
+ * Relevant Example:
+ * - LEDC PWM Example: https://github.com/espressif/esp-idf/tree/v5.2/examples/peripherals/ledc
+ */
+void writePWM(Pin pin, uint16_t value, int freq) {
+    jsiConsolePrintf("jshardwarePWM.h - writePWM: Writing PWM on pin %d, value %d, frequency %d\n", pin, value, freq);
+    ESP_LOGI(TAG, "Configuring PWM on pin %d with value %d and frequency %d", pin, value, freq);
+
+    ledc_channel_config_t ledc_channel = {
+        .channel    = LEDC_CHANNEL_0,
+        .duty       = value,
+        .gpio_num   = pin,
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .timer_sel  = LEDC_TIMER_0
+    };
+
+    esp_err_t err = ledc_channel_config(&ledc_channel);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to configure LEDC channel: %s", esp_err_to_name(err));
+    }
+
+    err = ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, freq);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to set LEDC frequency: %s", esp_err_to_name(err));
+    }
+}
+
+/**
+ * Sets the PWM value for the specified pin.
+ */
+void setPWM(Pin pin, uint16_t value) {
+    jsiConsolePrintf("jshardwarePWM.h - setPWM: Setting PWM on pin %d with value %d\n", pin, value);
+    ESP_LOGI(TAG, "Setting PWM on pin %d with duty cycle %d", pin, value);
+
+    esp_err_t err = ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, value);
+    if (err == ESP_OK) {
+        ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
+    } else {
+        ESP_LOGE(TAG, "Failed to set LEDC duty cycle: %s", esp_err_to_name(err));
+    }
+}
+
+
+
+#if original
 #include "jsutils.h"
 
 #include "jshardwarePWM.h"
@@ -164,5 +238,5 @@ void setPWM(Pin pin,uint16_t value){
 #endif
 }
 
-
+#endif // original
 

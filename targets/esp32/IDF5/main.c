@@ -37,7 +37,7 @@
 
 #include "jsvar.h"
 
-extern void *espruino_stackHighPtr;  //Name spaced because this has to be a global variable.
+void *espruino_stackHighPtr;  //Name spaced because this has to be a global variable.
                                      //Used in jsuGetFreeStack().
 #ifdef CONFIG_IDF_TARGET_ESP32C3
 #include "hal/usb_serial_jtag_ll.h"
@@ -131,14 +131,14 @@ int app_main(void)
 #ifdef BLUETOOTH
   jsble_init();
 #endif
-#if ESP_IDF_VERSION_MAJOR>=5
-  esp_flash_init(NULL);
-#else
-  spi_flash_init();
-#endif
-  timers_Init();
-  timer_Init("EspruinoTimer",0,0,0);
-
+// #if ESP_IDF_VERSION_MAJOR>=5
+//  esp_flash_init(NULL);
+// #else
+//  spi_flash_init();
+// #endif
+//  timers_Init();
+//  timer_Init("EspruinoTimer",0,0,0);
+/* 
   // Map the js_code partition into memory so can be accessed by E.setBootCode("")
   const esp_partition_t* part;
   spi_flash_mmap_handle_t hrom;
@@ -151,14 +151,14 @@ int app_main(void)
     // The mapping in hrom is never released - as js code can be called at anytime
   }
   esp_partition_iterator_release(it);
-
+*/
 #ifdef RTOS
   queues_init();
   tasks_init();
   task_init(espruinoTask,"EspruinoTask", ESP_STACK_SIZE, 5, 0);
   task_init(uartTask,"ConsoleTask",2200,20,0);
 #else
-  xTaskCreatePinnedToCore(&espruinoTask, "espruinoTask", ESP_STACK_SIZE, NULL, 5, NULL, 0);
+ // xTaskCreatePinnedToCore(&espruinoTask, "espruinoTask", ESP_STACK_SIZE, NULL, 5, NULL, 0);
   xTaskCreatePinnedToCore(&uartTask,"uartTask",2200,NULL,20,NULL,0);
 #endif
   return 0;

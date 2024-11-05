@@ -23,6 +23,438 @@
  * approval from all the stakeholders.  In addition, the semantics of the
  * functions should follow the expected conventions.
  */
+
+#include "jsinteractive.h"
+#include "jshardware.h"
+#include "driver/gpio.h"
+#include "driver/adc.h"
+#include "driver/uart.h"
+#include "driver/spi_master.h"
+#include "driver/i2c.h"
+#include "driver/timer.h"
+#include "esp_log.h"
+
+#define TAG "jshardware"
+#define FLASH_MAX (4*1024*1024) //4MB
+#define FLASH_PAGE_SHIFT 12 // Shift is much faster than division by 4096 (size of page)
+#define FLASH_PAGE ((uint32_t)1<<FLASH_PAGE_SHIFT)  //4KB
+
+#define UNUSED(x) (void)(x)
+
+
+// System Initialization
+void jshInit() {
+    jsiConsolePrintf("jshardware.h - jshInit: Initializing hardware\n");
+    ESP_LOGI(TAG, "Initializing hardware at startup");
+}
+
+void jshReset() {
+    jsiConsolePrintf("jshardware.h - jshReset: Resetting hardware\n");
+    ESP_LOGI(TAG, "Resetting peripherals to power-on state");
+}
+
+// Main Loop & Sleep Functions
+void jshIdle() {
+    jsiConsolePrintf("jshardware.h - jshIdle: Executing idle loop\n");
+    ESP_LOGI(TAG, "Idle loop - checking for GPIO interrupts and updating state");
+}
+
+void jshBusyIdle() {
+    jsiConsolePrintf("jshardware.h - jshBusyIdle: Busy idle\n");
+    ESP_LOGI(TAG, "Handling busy-wait states (e.g., waiting for data to send)");
+}
+
+bool jshSleep(JsSysTime timeUntilWake) {
+    jsiConsolePrintf("jshardware.h - jshSleep: Entering sleep mode\n");
+    ESP_LOGI(TAG, "Entering sleep mode, wake after %llu ticks", timeUntilWake);
+    return true;  // Stub return - implement sleep functionality
+}
+
+// Device Info & State
+void jshKill() {
+    jsiConsolePrintf("jshardware.h - jshKill: Cleaning up hardware\n");
+    ESP_LOGI(TAG, "Cleaning up hardware resources");
+}
+
+int jshGetSerialNumber(unsigned char *data, int maxChars) {
+    jsiConsolePrintf("jshardware.h - jshGetSerialNumber: Getting serial number\n");
+    ESP_LOGI(TAG, "Getting hardware serial number");
+    return 0; // Return actual number of chars
+}
+
+bool jshIsUSBSERIALConnected() {
+    jsiConsolePrintf("jshardware.h - jshIsUSBSERIALConnected: Checking USB serial connection\n");
+    ESP_LOGI(TAG, "Checking if USB serial is connected");
+    return false; // Stub return value
+}
+
+JsSysTime jshGetSystemTime() {
+    jsiConsolePrintf("jshardware.h - jshGetSystemTime: Getting system time\n");
+    ESP_LOGI(TAG, "Retrieving system time since epoch");
+    return 0;  // Stub return value
+}
+
+void jshSetSystemTime(JsSysTime time) {
+    jsiConsolePrintf("jshardware.h - jshSetSystemTime: Setting system time\n");
+    ESP_LOGI(TAG, "Setting system time to %llu", time);
+}
+
+/** Is the given device initialised?
+ * eg. has jshUSARTSetup/jshI2CSetup/jshSPISetup been called previously? 
+ * SGA TODO review this
+ * */
+bool jshIsDeviceInitialised(IOEventFlags device) {
+  // uint64_t mask = 1ULL << (int)device;
+  //return (DEVICE_INITIALISED_FLAGS & mask) != 0L;
+  IOEventFlags dummy = 0; // SGA todo 
+  return dummy;
+} 
+
+// GPIO Functions
+void jshPinSetValue(Pin pin, bool value) {
+    jsiConsolePrintf("jshardware.h - jshPinSetValue: Setting pin %d to %d\n", pin, value);
+    ESP_LOGI(TAG, "Setting GPIO pin %d to %d", pin, value);
+    gpio_set_level(pin, value);  // Actual GPIO output
+}
+
+bool jshPinGetValue(Pin pin) {
+    jsiConsolePrintf("jshardware.h - jshPinGetValue: Reading pin %d\n", pin);
+    ESP_LOGI(TAG, "Reading GPIO pin %d", pin);
+    return gpio_get_level(pin); // Actual GPIO read
+}
+
+void jshPinSetState(Pin pin, JshPinState state) {
+    jsiConsolePrintf("jshardware.h - jshPinSetState: Setting pin %d to state %d\n", pin, state);
+    ESP_LOGI(TAG, "Setting pin %d to state %d", pin, state);
+    // Configure GPIO pin state
+}
+
+JshPinState jshPinGetState(Pin pin) {
+    jsiConsolePrintf("jshardware.h - jshPinGetState: Getting pin state for pin %d\n", pin);
+    ESP_LOGI(TAG, "Retrieving pin state for pin %d", pin);
+    JshPinState dummy = 0;
+    return dummy; // Stub return SGA TODO
+}
+
+/** Given a pin function, set that pin to the 16 bit value
+ * (used mainly for fast DAC and PWM handling from Utility Timer) */
+void jshSetOutputValue(JshPinFunction func, int value) {
+  int pin;
+  if (JSH_PINFUNCTION_IS_DAC(func)) {
+    uint8_t val = (uint8_t)(value >> 8);
+    switch (func & JSH_MASK_INFO) {
+  //    case JSH_DAC_CH1:  writeDAC(25,val); break;  SGA todo
+  //    case JSH_DAC_CH2:  writeDAC(26,val); break;  SGA todo
+    }
+  }
+  else{
+    pin = ((func >> JSH_SHIFT_INFO) << 4) + ((func >> JSH_SHIFT_TYPE) & 15);
+    // convert the 16 bit value to a 10 bit value.
+    // value=value >> (16 - PWMTimerBit); SGA todo
+    // setPWM( (Pin)pin, (uint16_t)value); SGA todo
+  }
+}
+
+/**
+ * Determine whether the pin can be watchable.
+ * Returns true if the pin is watchable.
+ * SGA TODO - review this
+ */
+bool jshCanWatch(
+    Pin pin //!< The pin that we are asking whether or not we can watch it.
+  ) {
+#ifdef CONFIG_IDF_TARGET_ESP32C3
+  return (pin!=18) && (pin!=19); // USB
+#else
+  return pin == 0 || ( pin >= 12 && pin <= 19 ) || pin == 21 ||  pin == 22 || ( pin >= 25 && pin <= 27 ) || ( pin >= 34 && pin <= 39 );
+#endif
+}
+
+/// Given a Pin, return the current pin function associated with it
+JshPinFunction jshGetCurrentPinFunction(Pin pin) {
+  if (jshIsPinValid(pin)) {
+    int i;
+    for (i=0;i<JSH_PININFO_FUNCTIONS;i++) {
+      JshPinFunction func = pinInfo[pin].functions[i];
+      if (JSH_PINFUNCTION_IS_TIMER(func) ||
+          JSH_PINFUNCTION_IS_DAC(func))
+        return func;
+    }
+  }
+  return JSH_NOTHING;
+}
+
+/**
+ * Check if state is default - return true if default
+ * bool jshIsPinStateDefault(Pin pin, JshPinState state) 
+ * see weak definition in src/jshardware_common.c
+ * Called from jsinteractive.c jsiDumpHardwareInitialisation 
+ */
+
+
+// Timer Functions
+void jshUtilTimerStart(JsSysTime period) {
+    jsiConsolePrintf("jshardware.h - jshUtilTimerStart: Starting utility timer for %llu ticks\n", period);
+    ESP_LOGI(TAG, "Starting utility timer with period %llu", period);
+    // Start timer
+}
+
+void jshUtilTimerDisable() {
+    jsiConsolePrintf("jshardware.h - jshUtilTimerDisable: Disabling utility timer\n");
+    ESP_LOGI(TAG, "Disabling utility timer");
+    // Stop timer
+}
+
+// USART, I2C, and Flash Stubs
+void jshUSARTSetup(IOEventFlags device, JshUSARTInfo *inf) {
+    jsiConsolePrintf("jshardware.h - jshUSARTSetup: Setting up UART device %d\n", device);
+    ESP_LOGI(TAG, "Setting up UART device %d with specified info", device);
+}
+
+void jshFlashWrite(void *buf, uint32_t addr, uint32_t len) {
+    jsiConsolePrintf("jshardware.h - jshFlashWrite: Writing to flash at address %08x, length %d\n", addr, len);
+    ESP_LOGI(TAG, "Writing to flash memory at address %08x, length %d", addr, len);
+}
+
+/** Kick a device into action (if required). For instance we may have data ready
+ * to sent to a USART, but we need to enable the IRQ such that it can automatically
+ * fetch the characters to send.
+ */
+void jshUSARTKick(IOEventFlags device) {
+  int c = jshGetCharToTransmit(device);
+  while(c >= 0) {
+  switch(device){
+#ifdef BLUETOOTH
+    case EV_BLUETOOTH:
+      gatts_sendNUSNotification(c);
+      break;
+#endif
+    case EV_SERIAL1:
+ //     uart_tx_one_char((uint8_t)c); //SGA todo
+#ifdef CONFIG_IDF_TARGET_ESP32C3
+      // The USB CDC UART on the C3 only writes the data to USB after a newline. Ensure uartTask in main.c knows to flush the UART next time
+      extern void esp32USBUARTWasUsed();
+      esp32USBUARTWasUsed();
+#endif
+      break;
+    default:
+     // writeSerial(device,(uint8_t)c); SGA todo
+      break;
+    //if(device == EV_SERIAL1) uart_tx_one_char((uint8_t)c);
+    //else writeSerial(device,(uint8_t)c);
+  }
+    c = jshGetCharToTransmit(device);
+  }
+}
+
+
+// Analog Functions
+JsVarFloat jshPinAnalog(Pin pin) {
+    jsiConsolePrintf("jshardware.h - jshPinAnalog: Reading analog value on pin %d\n", pin);
+    ESP_LOGI(TAG, "Reading analog value on pin %d", pin);
+    return 0.0; // Stub return
+}
+
+int jshPinAnalogFast(Pin pin) {
+    jsiConsolePrintf("jshardware.h - jshPinAnalogFast: Fast analog read on pin %d\n", pin);
+    ESP_LOGI(TAG, "Fast analog read on pin %d", pin);
+    return 0; // Stub return
+}
+
+JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq, JshAnalogOutputFlags flags) {
+    jsiConsolePrintf("jshardware.h - jshPinAnalogOutput: Analog output on pin %d, value=%f, freq=%f\n", pin, value, freq);
+    ESP_LOGI(TAG, "Setting analog output on pin %d with value %f and frequency %f", pin, value, freq);
+    JshPinFunction dummy = 0;
+    return dummy; // Stub return  SGA TODO
+}
+
+// Watchdog Functions
+void jshEnableWatchDog(JsVarFloat timeout) {
+    jsiConsolePrintf("jshardware.h - jshEnableWatchDog: Enabling watchdog with timeout %f seconds\n", timeout);
+    ESP_LOGI(TAG, "Enabling watchdog with timeout %f seconds", timeout);
+}
+
+void jshKickWatchDog() {
+    jsiConsolePrintf("jshardware.h - jshKickWatchDog: Kicking watchdog\n");
+    ESP_LOGI(TAG, "Kicking watchdog to prevent reset");
+}
+
+/* not needed here its in jshardware_common 
+void jshKickSoftWatchDog() {
+    jsiConsolePrintf("jshardware.h - jshKickSoftWatchDog: Kicking soft watchdog\n");
+    ESP_LOGI(TAG, "Kicking soft watchdog");
+}
+*/
+
+// Event and Pin Watch Functions
+IOEventFlags jshPinWatch(Pin pin, bool shouldWatch, JshPinWatchFlags flags) {
+    jsiConsolePrintf("jshardware.h - jshPinWatch: Watching pin %d, shouldWatch=%d\n", pin, shouldWatch);
+    ESP_LOGI(TAG, "Setting watch on pin %d, shouldWatch=%d", pin, shouldWatch);
+    IOEventFlags dummy=0;
+    return dummy; // Stub return SGA TODO
+}
+
+bool jshGetWatchedPinState(IOEventFlags device) {
+    jsiConsolePrintf("jshardware.h - jshGetWatchedPinState: Checking watched pin state\n");
+    ESP_LOGI(TAG, "Checking state of watched pin for device %d", device);
+    return false; // Stub return
+}
+
+bool jshIsEventForPin(IOEvent *event, Pin pin) {
+    jsiConsolePrintf("jshardware.h - jshIsEventForPin: Checking event for pin %d\n", pin);
+    ESP_LOGI(TAG, "Checking if event is for pin %d", pin);
+    return false; // Stub return
+}
+
+/**
+ * Erase the flash page containing the address.
+ * SGA todo review
+ */
+void jshFlashErasePage(
+    uint32_t addr //!<
+  ) {
+#if ESP_IDF_VERSION_MAJOR>=5
+ // esp_flash_erase_region(NULL, addr >> FLASH_PAGE_SHIFT, FLASH_PAGE); SGA TOIDI
+#else
+ // spi_flash_erase_sector(addr >> FLASH_PAGE_SHIFT);
+#endif
+}
+
+void jshFlashRead(void *buf, uint32_t addr, uint32_t len) {
+    jsiConsolePrintf("jshardware.h - jshFlashRead: Reading flash at addr %08x, length %d\n", addr, len);
+    ESP_LOGI(TAG, "Reading flash memory at addr %08x, length %d", addr, len);
+    // Stub read
+}
+
+size_t jshFlashGetMemMapAddress(size_t ptr) {
+    jsiConsolePrintf("jshardware.h - jshFlashGetMemMapAddress: Mapping memory address %08x\n", ptr);
+    ESP_LOGI(TAG, "Mapping memory address %08x", ptr);
+    return ptr; // Stub return
+}
+
+
+/*
+getFree function called from jswrap_flash_getFree
+This method returns an array of objects of the form `{addr : #, length : #}`,
+representing contiguous areas of flash memory in the chip that are not used for
+anything.
+*/
+JsVar *jshFlashGetFree() {
+  JsVar *jsFreeFlash = jsvNewEmptyArray();
+  if (!jsFreeFlash) return 0;
+  // Space reserved here in the parition table -  using sub type 0x40
+  // This should be read from the partition table  todo ?????
+ // addFlashArea(jsFreeFlash, 0xE000, 0x2000);   SGA TODO
+ // addFlashArea(jsFreeFlash, 0x310000, 0x10000);
+ // addFlashArea(jsFreeFlash, 0x360000, 0xA0000);
+  return jsFreeFlash;
+}
+
+/**
+ * Return start address and size of the flash page the given address resides in.
+ * Returns false if no page.
+ */
+bool jshFlashGetPage(
+    uint32_t addr,       //!<
+    uint32_t *startAddr, //!<
+    uint32_t *pageSize   //!<
+  ) {
+  if (addr >= FLASH_MAX) return false;
+  *startAddr = addr & ~(FLASH_PAGE-1);
+  *pageSize = FLASH_PAGE;
+  return true;
+}
+
+// Utility Timer Control
+void jshUtilTimerReschedule(JsSysTime period) {
+    jsiConsolePrintf("jshardware.h - jshUtilTimerReschedule: Rescheduling timer for %llu ticks\n", period);
+    ESP_LOGI(TAG, "Rescheduling timer for period %llu", period);
+    // Stub reschedule timer
+}
+
+// Miscellaneous Functions
+JsVarFloat jshReadTemperature() {
+    jsiConsolePrintf("jshardware.h - jshReadTemperature: Reading temperature\n");
+    ESP_LOGI(TAG, "Reading temperature from internal sensor");
+    return 0.0; // Stub temperature value
+}
+
+JsVarFloat jshReadVRef() {
+    jsiConsolePrintf("jshardware.h - jshReadVRef: Reading voltage reference\n");
+    ESP_LOGI(TAG, "Reading voltage reference");
+    return 3.3; // Stub voltage reference (example 3.3V)
+}
+
+unsigned int jshGetRandomNumber() {
+    jsiConsolePrintf("jshardware.h - jshGetRandomNumber: Generating random number\n");
+    ESP_LOGI(TAG, "Generating random number");
+    return rand(); // Stub using rand()
+}
+
+void jshReboot() {
+    jsiConsolePrintf("jshardware.h - jshReboot: Rebooting device\n");
+    ESP_LOGI(TAG, "Rebooting device");
+    // Stub for system reboot
+}
+
+/** Change the processor clock info. What's in options is platform
+ * specific - you should update the docs for jswrap_espruino_setClock
+ * to match what gets implemented here. The return value is the clock
+ * speed in Hz though. */
+unsigned int jshSetSystemClock(JsVar *options) {
+  UNUSED(options);
+  jsError(">> jshSetSystemClock Not implemented");
+  return 0;
+}
+
+/* Adds the estimated power usage of the microcontroller in uA to the 'devices' object. The CPU should be called 'CPU' */
+// also defined with a weak function in jshardware_common.c where // not implemented by default
+void jsvGetProcessorPowerUsage(JsVar *devices) {
+  jsvObjectSetChildAndUnLock(devices, "CPU", jsvNewFromInteger(20000));
+  // standard power usage of ESP32S3 without Wifi
+}
+
+
+/** Get processor clock info. What's returned is platform
+ * specific - you should update the docs for jswrap_espruino_getClock
+ * to match what gets implemented here */
+// JsVar *jshGetSystemClock(); is defined in jshardware_common with a weak definition
+
+/**
+ * Given a time in microseconds, get us the value in milliseconds (float)
+ */
+JsVarFloat jshGetMillisecondsFromTime(JsSysTime time) {
+  return (JsVarFloat) time / 1000.0;
+}
+
+void jshInterruptOff() {
+  //taskDISABLE_INTERRUPTS();
+}
+
+void jshInterruptOn()  {
+  //taskENABLE_INTERRUPTS();
+}
+
+/// Are we currently in an interrupt?
+bool jshIsInInterrupt() {
+  return false; // FIXME!
+}
+
+/**
+ * Delay (blocking) for the supplied number of microseconds.
+ */
+void jshDelayMicroseconds(int microsec) {
+  // ets_delay_us((uint32_t)microsec);
+} // End of jshDelayMicroseconds
+
+/**
+ * Given a time in milliseconds as float, get us the value in microsecond
+ */
+JsSysTime jshGetTimeFromMilliseconds(JsVarFloat ms) {
+  return (JsSysTime) (ms * 1000.0);
+}
+
+#if original
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -827,3 +1259,5 @@ void jsvGetProcessorPowerUsage(JsVar *devices) {
   jsvObjectSetChildAndUnLock(devices, "CPU", jsvNewFromInteger(20000));
   // standard power usage of ESP32S3 without Wifi
 }
+
+#endif // original

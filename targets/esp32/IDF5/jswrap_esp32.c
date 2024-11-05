@@ -32,10 +32,6 @@
 #endif
 #include "jshardwareESP32.h"
 
-#include "jsutils.h"
-#include "jsinteractive.h"
-#include "jsparse.h"
-
 /*JSON{
   "type": "class",
   "class" : "ESP32",

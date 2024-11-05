@@ -3,6 +3,7 @@
  * a JavaScript interpreter for Microcontrollers designed by Gordon Williams
  *
  * Copyright (C) 2016 by Juergen Marsch
+ * Modified Nov 2024 for ESP-IDF Version 5.2 by SimonGAndrews
  *
  * This Source Code Form is subject to the terms of the Mozilla Publici
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +15,111 @@
  * Contains ESP32 board specific functions.
  * ----------------------------------------------------------------------------
  */
+
+#include "jsinteractive.h"
+#include "jshardwareAnalog.h"
+#include "driver/adc.h"
+#include "driver/dac.h"
+#include "esp_log.h"
+
+#define TAG "jshardwareAnalog"  // ESP-IDF log tag for easier debugging
+
+#if CONFIG_IDF_TARGET_ESP32
+    // Configuration specific to ESP32
+#elif CONFIG_IDF_TARGET_ESP32C3
+    typedef enum { DAC_CHAN_0 = 0, DAC_CHAN_1 = 1 } dac_channel_t;
+#elif CONFIG_IDF_TARGET_ESP32S3
+    typedef enum { DAC_CHAN_0 = 0, DAC_CHAN_1 = 1 } dac_channel_t;
+#else
+    #error "Unsupported ESP32 variant"
+#endif
+
+/**
+ * Initialize the ADC module for a specific group.
+ * Placeholder for future ESP-IDF 5.2.2 setup requirements.
+ *
+ * Relevant Example:
+ * - ADC Continuous Read: https://github.com/espressif/esp-idf/blob/v5.2/examples/peripherals/adc/continuous_read/main/continuous_read_main.c
+ */
+void initADC(int ADCgroup) {
+    jsiConsolePrintf("jshardwareAnalog.h - initADC: Initializing ADC group %d\n", ADCgroup);
+    ESP_LOGI(TAG, "initADC: Configuring ADC for group %d", ADCgroup);
+    
+    // TODO: Add ESP-IDF 5.2.2 specific ADC configuration here
+    // Example: Configure ADC width and attenuation based on ADCgroup
+    
+    // Error handling example
+    esp_err_t err = ESP_OK; // Replace with actual setup function
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize ADC: %s", esp_err_to_name(err));
+    }
+}
+
+/**
+ * Reads the ADC value from the specified pin.
+ * Adds detailed logging for debugging.
+ *
+ * Relevant Example:
+ * - ADC Oneshot Read: https://github.com/espressif/esp-idf/blob/v5.2/examples/peripherals/adc/oneshot_read/main/oneshot_read_main.c
+ */
+int readADC(Pin pin) {
+    jsiConsolePrintf("jshardwareAnalog.h - readADC: Reading ADC value from pin %d\n", pin);
+    ESP_LOGI(TAG, "readADC: Reading ADC value on pin %d", pin);
+
+    // TODO: Replace with actual ADC reading logic
+    int adc_value = 0;
+
+    // Error handling for invalid ADC read
+    if (adc_value < 0) {
+        ESP_LOGW(TAG, "readADC: Invalid ADC read on pin %d", pin);
+    }
+
+    return adc_value;
+}
+
+/**
+ * Sets the range for the ADC on the specified pin.
+ * Uses ESP-IDF functions to ensure valid configuration.
+ *
+ * Relevant Example:
+ * - ADC Continuous Read: https://github.com/espressif/esp-idf/blob/v5.2/examples/peripherals/adc/continuous_read/main/continuous_read_main.c
+ */
+void rangeADC(Pin pin, int range) {
+    jsiConsolePrintf("jshardwareAnalog.h - rangeADC: Setting range %d on pin %d\n", range, pin);
+    ESP_LOGI(TAG, "rangeADC: Configuring ADC range %d on pin %d", range, pin);
+
+    // TODO: Implement range setting, potentially using attenuation levels
+}
+
+/**
+ * Writes a value to the DAC on the specified pin.
+ *
+ * Relevant Example:
+ * - DAC Oneshot Output: https://github.com/espressif/esp-idf/blob/v5.2/examples/peripherals/dac/dac_oneshot/main/dac_oneshot_example_main.c
+ */
+void writeDAC(Pin pin, uint8_t value) {
+    jsiConsolePrintf("jshardwareAnalog.h - writeDAC: Writing value %d to DAC on pin %d\n", value, pin);
+    ESP_LOGI(TAG, "writeDAC: Writing value %d to DAC on pin %d", value, pin);
+
+    // TODO: Replace with ESP-IDF DAC write function for pin and value
+}
+
+/**
+ * Resets the ADC to default settings.
+ *
+ * Relevant Example:
+ * - ADC Continuous Read: https://github.com/espressif/esp-idf/blob/v5.2/examples/peripherals/adc/continuous_read/main/continuous_read_main.c
+ */
+void ADCReset() {
+    jsiConsolePrintf("jshardwareAnalog.h - ADCReset: Resetting ADC\n");
+    ESP_LOGI(TAG, "ADCReset: Resetting ADC to default settings");
+
+    // TODO: Implement reset logic for ADC, clearing any custom configurations
+}
+
+
+
+#if original
 #include "jshardwareAnalog.h"
 #include "driver/adc.h"
 #if CONFIG_IDF_TARGET_ESP32
@@ -179,5 +285,5 @@ void writeDAC(Pin pin,uint8_t value){
 #endif
 }
 
-
+#endif // original
 
